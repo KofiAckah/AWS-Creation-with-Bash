@@ -1,0 +1,65 @@
+# Environment and Configuration
+.env
+.env.local
+.env.*.local
+*.log
+setup.log
+
+# AWS
+.aws/
+aws_credentials
+aws_config
+
+# Terraform (if used)
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+
+# State and temporary files
+.state
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Bash specific
+*.sh~
+.bash_history
+
+# Node modules (if any)
+node_modules/
+
+# Python cache (if any)
+__pycache__/
+*.pyc
+
+# Build outputs
+dist/
+build/
+
+# Secrets and sensitive data
+*secret*
+*password*
+*token*
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Project specific
+output/
+results/
+*.out
+
+Assignment.pdf
