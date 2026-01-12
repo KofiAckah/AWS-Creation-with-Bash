@@ -1,0 +1,21 @@
+========================================
+Welcome to the AWS Automation Lab!
+========================================
+
+Hello!
+
+This file is part of the AWS Automation Lab project.
+It demonstrates automated AWS infrastructure deployment using Bash scripts.
+
+What we're building:
+- VPC with public and private subnets
+- Internet Gateway for connectivity
+- Security Groups for access control
+- S3 bucket for file storage
+
+This welcome file is automatically uploaded to S3 as part of the automation.
+
+Region: eu-west-1
+
+Thank you for using this lab!
+========================================
