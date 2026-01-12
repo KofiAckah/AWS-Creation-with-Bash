@@ -5,9 +5,36 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
 source "${SCRIPT_DIR}/utils.sh"
 
+# Function to check if VPC already exists
+check_existing_vpc() {
+    local existing_vpc_id=$(load_state "VPC_ID" 2>/dev/null)
+    
+    if [ -n "$existing_vpc_id" ]; then
+        log_info "Found existing VPC ID in state file: $existing_vpc_id"
+        
+        # Verify the VPC actually exists in AWS
+        if aws ec2 describe-vpcs --vpc-ids "$existing_vpc_id" --region "$REGION" &> /dev/null; then
+            log_info "VPC exists in AWS. Skipping creation."
+            VPC_ID="$existing_vpc_id"
+            return 0
+        else
+            log_warn "VPC ID in state file does not exist in AWS. Will create new VPC."
+            return 1
+        fi
+    fi
+    
+    return 1
+}
+
 # Function to create VPC
 create_vpc() {
     log_section "VPC Creation"
+    
+    # Check if VPC already exists
+    if check_existing_vpc; then
+        log_section_end "VPC Creation" "success"
+        return 0
+    fi
     
     log_info "Creating VPC with CIDR block: $VPC_CIDR"
     validate_cidr "$VPC_CIDR" "VPC" || return 1
@@ -50,9 +77,36 @@ create_vpc() {
     return 0
 }
 
+# Function to check if Internet Gateway already exists
+check_existing_igw() {
+    local existing_igw_id=$(load_state "IGW_ID" 2>/dev/null)
+    
+    if [ -n "$existing_igw_id" ]; then
+        log_info "Found existing IGW ID in state file: $existing_igw_id"
+        
+        # Verify the IGW actually exists in AWS
+        if aws ec2 describe-internet-gateways --internet-gateway-ids "$existing_igw_id" --region "$REGION" &> /dev/null; then
+            log_info "Internet Gateway exists in AWS. Skipping creation."
+            IGW_ID="$existing_igw_id"
+            return 0
+        else
+            log_warn "IGW ID in state file does not exist in AWS. Will create new IGW."
+            return 1
+        fi
+    fi
+    
+    return 1
+}
+
 # Function to create Internet Gateway
 create_internet_gateway() {
     log_section "Internet Gateway Creation"
+    
+    # Check if IGW already exists
+    if check_existing_igw; then
+        log_section_end "Internet Gateway Creation" "success"
+        return 0
+    fi
     
     log_info "Creating Internet Gateway"
     
@@ -91,9 +145,36 @@ create_internet_gateway() {
     return 0
 }
 
+# Function to check if Public Subnet already exists
+check_existing_public_subnet() {
+    local existing_subnet_id=$(load_state "PUBLIC_SUBNET_ID" 2>/dev/null)
+    
+    if [ -n "$existing_subnet_id" ]; then
+        log_info "Found existing Public Subnet ID in state file: $existing_subnet_id"
+        
+        # Verify the subnet actually exists in AWS
+        if aws ec2 describe-subnets --subnet-ids "$existing_subnet_id" --region "$REGION" &> /dev/null; then
+            log_info "Public Subnet exists in AWS. Skipping creation."
+            PUBLIC_SUBNET_ID="$existing_subnet_id"
+            return 0
+        else
+            log_warn "Public Subnet ID in state file does not exist in AWS. Will create new subnet."
+            return 1
+        fi
+    fi
+    
+    return 1
+}
+
 # Function to create Public Subnet
 create_public_subnet() {
     log_section "Public Subnet Creation"
+    
+    # Check if subnet already exists
+    if check_existing_public_subnet; then
+        log_section_end "Public Subnet Creation" "success"
+        return 0
+    fi
     
     log_info "Creating Public Subnet with CIDR: $PUBLIC_SUBNET_CIDR"
     validate_cidr "$PUBLIC_SUBNET_CIDR" "Public Subnet" || return 1
@@ -151,9 +232,36 @@ create_public_subnet() {
     return 0
 }
 
+# Function to check if Private Subnet already exists
+check_existing_private_subnet() {
+    local existing_subnet_id=$(load_state "PRIVATE_SUBNET_ID" 2>/dev/null)
+    
+    if [ -n "$existing_subnet_id" ]; then
+        log_info "Found existing Private Subnet ID in state file: $existing_subnet_id"
+        
+        # Verify the subnet actually exists in AWS
+        if aws ec2 describe-subnets --subnet-ids "$existing_subnet_id" --region "$REGION" &> /dev/null; then
+            log_info "Private Subnet exists in AWS. Skipping creation."
+            PRIVATE_SUBNET_ID="$existing_subnet_id"
+            return 0
+        else
+            log_warn "Private Subnet ID in state file does not exist in AWS. Will create new subnet."
+            return 1
+        fi
+    fi
+    
+    return 1
+}
+
 # Function to create Private Subnet
 create_private_subnet() {
     log_section "Private Subnet Creation"
+    
+    # Check if subnet already exists
+    if check_existing_private_subnet; then
+        log_section_end "Private Subnet Creation" "success"
+        return 0
+    fi
     
     log_info "Creating Private Subnet with CIDR: $PRIVATE_SUBNET_CIDR"
     validate_cidr "$PRIVATE_SUBNET_CIDR" "Private Subnet" || return 1
@@ -207,9 +315,36 @@ create_private_subnet() {
     return 0
 }
 
+# Function to check if Public Route Table already exists
+check_existing_public_rt() {
+    local existing_rt_id=$(load_state "PUBLIC_RT_ID" 2>/dev/null)
+    
+    if [ -n "$existing_rt_id" ]; then
+        log_info "Found existing Public Route Table ID in state file: $existing_rt_id"
+        
+        # Verify the route table actually exists in AWS
+        if aws ec2 describe-route-tables --route-table-ids "$existing_rt_id" --region "$REGION" &> /dev/null; then
+            log_info "Public Route Table exists in AWS. Skipping creation."
+            PUBLIC_RT_ID="$existing_rt_id"
+            return 0
+        else
+            log_warn "Route Table ID in state file does not exist in AWS. Will create new route table."
+            return 1
+        fi
+    fi
+    
+    return 1
+}
+
 # Function to create and configure Route Table for Public Subnet
 create_public_route_table() {
     log_section "Public Route Table Creation"
+    
+    # Check if route table already exists
+    if check_existing_public_rt; then
+        log_section_end "Public Route Table Creation" "success"
+        return 0
+    fi
     
     log_info "Creating Public Route Table"
     
