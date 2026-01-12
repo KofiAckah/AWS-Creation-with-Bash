@@ -34,6 +34,12 @@ SSH_CIDR="0.0.0.0/0"      # SSH access from anywhere (change to your IP for bett
 HTTP_CIDR="0.0.0.0/0"     # HTTP access from anywhere
 HTTPS_CIDR="0.0.0.0/0"    # HTTPS access from anywhere
 
+# --- EC2 Instance Configuration ---
+INSTANCE_TYPE="t3.micro"           # Free tier eligible
+INSTANCE_NAME="AutomationWebServer"
+KEY_NAME="AutoKeyPair"     
+
 # Export the variables so they are available to sub-shells if needed
 export REGION VPC_CIDR PUBLIC_SUBNET_CIDR PRIVATE_SUBNET_CIDR PROJECT_TAG LOG_FILE STATE_FILE
 export SECURITY_GROUP_NAME SECURITY_GROUP_DESCRIPTION SSH_CIDR HTTP_CIDR HTTPS_CIDR
+export INSTANCE_TYPE INSTANCE_NAME KEY_NAME
