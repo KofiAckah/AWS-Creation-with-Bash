@@ -1,14 +1,13 @@
 #!/bin/bash
 
 # --- Global AWS Settings ---
-# Choose your preferred region (ensure it matches your CLI config)
 REGION="eu-west-1" 
 
 # --- VPC & Networking Constants ---
-# The IP range for your custom VPC
+# The CIDR block for the VPC
 VPC_CIDR="10.0.0.0/16"
 
-# The IP range for your specific subnet
+# The CIDR block for the specific subnet
 PUBLIC_SUBNET_CIDR="10.0.1.0/24"
 PRIVATE_SUBNET_CIDR="10.0.2.0/24"
 
@@ -19,10 +18,9 @@ PUBLIC_SUBNET_NAME="AutomationPublicSubnet"
 PRIVATE_SUBNET_NAME="AutomationPrivateSubnet"
 
 # --- Output & Logging ---
-# The path to your log file
 LOG_FILE="setup.log"
 
-# The name of your state file
+# The name of the state file
 STATE_FILE=".env"
 
 # --- Security Group Configuration ---
@@ -35,9 +33,10 @@ HTTP_CIDR="0.0.0.0/0"     # HTTP access from anywhere
 HTTPS_CIDR="0.0.0.0/0"    # HTTPS access from anywhere
 
 # --- EC2 Instance Configuration ---
-INSTANCE_TYPE="t3.micro"           # Free tier eligible
+INSTANCE_TYPE="t3.micro"
 INSTANCE_NAME="AutomationWebServer"
-KEY_NAME="AutoKeyPair"     
+# Note I have already created a key pair in AWS console named "AutoKeyPair"
+KEY_NAME="AutoKeyPair"
 
 # Export the variables so they are available to sub-shells if needed
 export REGION VPC_CIDR PUBLIC_SUBNET_CIDR PRIVATE_SUBNET_CIDR PROJECT_TAG LOG_FILE STATE_FILE

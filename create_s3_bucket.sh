@@ -122,7 +122,7 @@ upload_welcome_file() {
     
     log_info "Welcome file uploaded successfully"
     
-    # Make the file publicly readable (optional - comment out if not needed)
+    # Make the file publicly readable (optional)
     log_debug "Setting ACL for welcome file"
     aws s3api put-object-acl \
         --bucket "$BUCKET_NAME" \
