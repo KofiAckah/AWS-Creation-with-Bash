@@ -122,20 +122,6 @@ upload_welcome_file() {
     
     log_info "Welcome file uploaded successfully"
     
-    # Make the file publicly readable (optional)
-    log_debug "Setting ACL for welcome file"
-    aws s3api put-object-acl \
-        --bucket "$BUCKET_NAME" \
-        --key "$WELCOME_FILE" \
-        --acl public-read \
-        --region "$REGION" 2>&1 | tee -a "$LOG_FILE"
-    
-    if [ $? -ne 0 ]; then
-        log_warn "Failed to set ACL for welcome file, but continuing..."
-    else
-        log_info "ACL set for welcome file"
-    fi
-    
     # Get the file URL
     FILE_URL="https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${WELCOME_FILE}"
     log_info "File URL: $FILE_URL"
@@ -160,9 +146,52 @@ enable_public_access() {
     
     if [ $? -ne 0 ]; then
         log_warn "Failed to configure public access settings"
+        log_section_end "Configure Public Access" "failed"
+        return 1
     else
         log_info "Public access configured successfully"
     fi
+    
+    # Create bucket policy for public read access
+    log_info "Creating bucket policy for public read access"
+    
+    local bucket_policy=$(cat <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::${BUCKET_NAME}/*"
+        }
+    ]
+}
+EOF
+)
+    
+    # Save policy to temporary file
+    local policy_file="/tmp/bucket_policy_${RANDOM}.json"
+    echo "$bucket_policy" > "$policy_file"
+    
+    log_debug "Applying bucket policy"
+    aws s3api put-bucket-policy \
+        --bucket "$BUCKET_NAME" \
+        --policy "file://$policy_file" \
+        --region "$REGION" 2>&1 | tee -a "$LOG_FILE"
+    
+    if [ $? -ne 0 ]; then
+        log_error "Failed to apply bucket policy"
+        rm -f "$policy_file"
+        log_section_end "Configure Public Access" "failed"
+        return 1
+    else
+        log_info "Bucket policy applied successfully"
+    fi
+    
+    # Clean up temporary policy file
+    rm -f "$policy_file"
     
     log_section_end "Configure Public Access" "success"
     
@@ -189,7 +218,7 @@ main() {
     create_s3_bucket || exit 1
     
     # Enable public access (optional)
-    enable_public_access
+    enable_public_access || exit 1
     
     # Upload welcome file
     upload_welcome_file || exit 1
@@ -200,6 +229,9 @@ main() {
         "Region: $REGION" \
         "Welcome File: $WELCOME_FILE" \
         "File URL: $(load_state WELCOME_FILE_URL)" \
+        "" \
+        "Public Access: Enabled" \
+        "Bucket Policy: Applied for public read access" \
         "" \
         "State file: $STATE_FILE" \
         "Log file: $LOG_FILE"
