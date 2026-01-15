@@ -13,6 +13,7 @@ This project provides a robust, modular set of shell scripts to automate the com
 ## ✨ Features
 
 ### Core Infrastructure Components
+- **🔑 Key Pair Management**: Automated EC2 key pair creation with secure permissions
 - **🌐 VPC Management**: Automated VPC creation with configurable CIDR blocks and DNS support
 - **🔀 Network Segmentation**: Public and private subnet provisioning with intelligent AZ selection
 - **🌍 Internet Gateway**: Automatic IGW creation, attachment, and route configuration
@@ -38,6 +39,7 @@ This project provides a robust, modular set of shell scripts to automate the com
 AWS_Resource_Creation_Bash/
 ├── config.sh                    # Central configuration management
 ├── utils.sh                     # Logging and utility functions
+├── create_key_pair.sh           # EC2 key pair creation
 ├── create_network.sh            # VPC and networking resources
 ├── create_security_group.sh     # Security group management
 ├── create_ec2.sh                # EC2 instance provisioning
@@ -84,10 +86,10 @@ AWS_Resource_Creation_Bash/
 ### Resource Dependencies
 
 ```
-VPC → Internet Gateway → Subnets → Route Tables → Security Groups → EC2 Instance
-                                                                         │
-                                                                         ▼
-                                                                    S3 Bucket
+Key Pair → VPC → Internet Gateway → Subnets → Route Tables → Security Groups → EC2 Instance
+                                                                                    │
+                                                                                    ▼
+                                                                               S3 Bucket
 ```
 
 ## 🛠️ Prerequisites
@@ -102,7 +104,6 @@ VPC → Internet Gateway → Subnets → Route Tables → Security Groups → EC
 - Valid AWS account
 - AWS CLI configured with credentials
 - IAM user/role with appropriate permissions
-- EC2 key pair (or script will create one)
 
 ### Required IAM Permissions
 ```json
@@ -142,21 +143,24 @@ aws configure
 ### 3. Review Configuration
 ```bash
 vim config.sh
-# Update region, CIDR blocks, instance types, etc.
+# Update region, CIDR blocks, instance types, key name, etc.
 ```
 
 ### 4. Deploy Infrastructure
 ```bash
-# Step 1: Create VPC and networking
+# Step 1: Create EC2 Key Pair (MUST BE FIRST!)
+./create_key_pair.sh
+
+# Step 2: Create VPC and networking
 ./create_network.sh
 
-# Step 2: Create Security Group
+# Step 3: Create Security Group
 ./create_security_group.sh
 
-# Step 3: Create EC2 Instance with web server
+# Step 4: Create EC2 Instance with web server
 ./create_ec2.sh
 
-# Step 4: Create S3 bucket and upload files
+# Step 5: Create S3 bucket and upload files
 ./create_s3_bucket.sh
 ```
 
@@ -171,11 +175,13 @@ vim config.sh
 
 ### 6. Cleanup (Optional)
 ```bash
-# Remove all resources
+# Remove all resources (except key pair - must be deleted manually)
 ./cleanup_resources.sh
 ```
 
-## ⚙️ Configuration
+## 📋 Detailed Usage
+
+### Creating EC2 Key Pair (Required First Step!)
 
 ### Network Configuration
 ```bash
@@ -269,6 +275,11 @@ LOG_LEVEL=${LOG_LEVEL:-$LOG_LEVEL_INFO}  # INFO, DEBUG, WARN, ERROR, FATAL
 ./create_ec2.sh
 ```
 
+**Prerequisites:**
+- ✅ Key pair must exist (run `create_key_pair.sh` first)
+- ✅ VPC must exist (run `create_network.sh` first)
+- ✅ Security group must exist (run `create_security_group.sh` first)
+
 **What it does:**
 - Fetches latest Amazon Linux 2 AMI
 - Creates EC2 instance with user data script
@@ -341,6 +352,8 @@ ssh -i AutoKeyPair.pem ec2-user@<public-ip>
 ```bash
 ./cleanup_resources.sh
 ```
+
+**⚠️ Note:** This script does NOT delete the EC2 key pair. You must delete it manually if needed.
 
 **What it does:**
 - Backs up state file
@@ -430,6 +443,32 @@ fi
 
 ## 🔒 Security Best Practices
 
+### Key Pair Security
+
+1. **Protect Your Private Key**
+   ```bash
+   # Ensure proper permissions
+   chmod 400 AutoKeyPair.pem
+   
+   # Store in secure location
+   mv AutoKeyPair.pem ~/.ssh/
+   ```
+
+2. **Backup Your Key**
+   ```bash
+   # Create encrypted backup
+   gpg -c AutoKeyPair.pem
+   
+   # Store backup in secure location (AWS S3, password manager, etc.)
+   ```
+
+3. **Never Commit Keys to Git**
+   ```bash
+   # Already in .gitignore
+   *.pem
+   *.key
+   ```
+
 ### Production Hardening
 
 1. **Restrict SSH Access**
@@ -472,9 +511,9 @@ fi
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### Key Pair Issues
 
-#### AWS CLI Not Found
+#### Key Pair Already Exists
 ```bash
 # Install AWS CLI v2
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -491,217 +530,38 @@ aws configure
 aws sts get-caller-identity
 ```
 
-#### Permission Denied on Scripts
+#### Lost Private Key File
+**⚠️ If you lose your .pem file, you CANNOT recover it!**
 ```bash
-# Make scripts executable
-chmod +x *.sh
+# Delete the key pair and create a new one
+aws ec2 delete-key-pair --key-name AutoKeyPair --region eu-west-1
+./create_key_pair.sh
 ```
 
-#### VPC Creation Fails
+#### Permission Denied When Using Key
 ```bash
-# Check if VPC limit reached
-aws ec2 describe-vpcs --region eu-west-1
+# Fix permissions
+chmod 400 AutoKeyPair.pem
 
-# VPC limit is 5 per region by default
-# Request limit increase if needed
+# Verify
+ls -la AutoKeyPair.pem
+# Should show: -r--------
 ```
 
-#### EC2 Instance Won't Start
+#### Cannot SSH to Instance
 ```bash
-# Check instance state
-aws ec2 describe-instances --instance-ids $INSTANCE_ID
+# 1. Verify key file exists and has correct permissions
+ls -la AutoKeyPair.pem
 
-# Check system log
-aws ec2 get-console-output --instance-id $INSTANCE_ID
-```
-
-#### Cannot Access Web Server
-```bash
-# 1. Check security group rules
+# 2. Check security group allows SSH from your IP
 aws ec2 describe-security-groups --group-ids $SECURITY_GROUP_ID
 
-# 2. Verify instance is running
+# 3. Verify instance is running
 aws ec2 describe-instances --instance-ids $INSTANCE_ID
 
-# 3. Check Apache status (SSH into instance)
-ssh -i AutoKeyPair.pem ec2-user@$PUBLIC_IP
-sudo systemctl status httpd
+# 4. Try SSH with verbose output
+ssh -i AutoKeyPair.pem -v ec2-user@$PUBLIC_IP
 ```
-
-#### S3 Bucket Name Already Exists
-```bash
-# S3 bucket names are globally unique
-# Script generates unique names using timestamp
-# If error persists, manually specify a different name
-```
-
-### Debug Mode
-```bash
-# Enable debug logging
-export LOG_LEVEL=0  # DEBUG level
-
-# Run script
-./create_network.sh
-
-# Verbose AWS CLI output
-export AWS_DEFAULT_OUTPUT=json
-export AWS_PAGER=""
-```
-
-## 📊 Cost Estimation
-
-### AWS Resources Pricing (eu-west-1)
-- **VPC**: Free
-- **Subnets**: Free
-- **Internet Gateway**: Free
-- **Route Tables**: Free
-- **Security Groups**: Free
-- **EC2 t3.micro**: ~$0.0104/hour (~$7.50/month)
-- **S3 Storage**: ~$0.023/GB/month
-- **Data Transfer**: First 1 GB/month free, then $0.09/GB
-
-**Estimated Monthly Cost**: ~$8-10 USD (varies with usage)
-
-### Cost Optimization Tips
-1. Stop EC2 instances when not in use
-2. Use Reserved Instances for long-term workloads
-3. Enable S3 lifecycle policies
-4. Monitor usage with AWS Cost Explorer
-
-## 🔧 Advanced Usage
-
-### Custom AMI
-```bash
-# In create_ec2.sh, replace get_latest_ami() function:
-AMI_ID="ami-your-custom-ami-id"
-```
-
-### Multiple Environments
-```bash
-# Create environment-specific config files
-cp config.sh config.dev.sh
-cp config.sh config.prod.sh
-
-# Use specific config
-source ./config.dev.sh
-./create_network.sh
-```
-
-### Parallel Execution
-```bash
-# Create resources in parallel (where possible)
-./create_network.sh &
-sleep 30  # Wait for VPC
-./create_security_group.sh &
-./create_s3_bucket.sh &
-wait
-./create_ec2.sh
-```
-
-### Custom User Data
-Edit the user data section in `create_ec2.sh` to add custom installation steps:
-```bash
-# Add after Apache installation
-yum install -y git nodejs npm
-npm install -g pm2
-```
-
-## 🎯 Use Cases
-
-### Development Environment
-- Quickly spin up isolated dev environments
-- Test infrastructure changes safely
-- Practice AWS deployments
-
-### CI/CD Pipeline Integration
-```bash
-# In your CI/CD pipeline
-- name: Deploy Infrastructure
-  run: |
-    chmod +x *.sh
-    ./create_network.sh
-    ./create_security_group.sh
-    ./create_ec2.sh
-```
-
-### Training & Learning
-- Hands-on AWS practice
-- Understanding infrastructure as code
-- Learning Bash scripting
-
-### Proof of Concept
-- Rapid prototyping
-- Client demonstrations
-- Architecture validation
-
-## 📈 Monitoring
-
-### CloudWatch Integration
-```bash
-# Enable detailed monitoring
-aws ec2 monitor-instances --instance-ids $INSTANCE_ID
-
-# Create CloudWatch alarm
-aws cloudwatch put-metric-alarm \
-    --alarm-name high-cpu \
-    --alarm-description "Alert on high CPU" \
-    --metric-name CPUUtilization \
-    --namespace AWS/EC2 \
-    --statistic Average \
-    --period 300 \
-    --threshold 80 \
-    --comparison-operator GreaterThanThreshold \
-    --dimensions Name=InstanceId,Value=$INSTANCE_ID
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
-
-### Areas for Enhancement
-- NAT Gateway support for private subnet internet access
-- RDS database provisioning
-- Application Load Balancer setup
-- Auto Scaling Group configuration
-- CloudFormation template export
-- Terraform state conversion
-- Multi-region support
-- Ansible integration
-
-### Development Guidelines
-1. Follow existing code style
-2. Add comprehensive logging
-3. Include state management
-4. Write idempotent code
-5. Update documentation
-6. Test in dev environment first
-
-## 📚 Resources
-
-### AWS Documentation
-- [AWS CLI Reference](https://docs.aws.amazon.com/cli/)
-- [VPC User Guide](https://docs.aws.amazon.com/vpc/)
-- [EC2 User Guide](https://docs.aws.amazon.com/ec2/)
-- [S3 Developer Guide](https://docs.aws.amazon.com/s3/)
-
-### Best Practices
-- [Logging in Bash Scripting](https://grahamwatts.co.uk/bash-logging/)
-- [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
-- [Bash Style Guide](https://google.github.io/styleguide/shellguide.html)
-- [Infrastructure as Code Best Practices](https://docs.aws.amazon.com/whitepapers/latest/introduction-devops-aws/infrastructure-as-code.html)
-
-## 📄 License
-
-This project is open source and available under the MIT License. Feel free to use, modify, and distribute as needed.
-
-## 🙏 Acknowledgments
-
-Built with focus on:
-- **Production-grade reliability**
-- **Enterprise logging standards**
-- **AWS best practices**
-- **Shell scripting excellence**
-- **DevOps principles**
 
 ---
 

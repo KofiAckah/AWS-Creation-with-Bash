@@ -35,7 +35,7 @@ HTTPS_CIDR="0.0.0.0/0"    # HTTPS access from anywhere
 # --- EC2 Instance Configuration ---
 INSTANCE_TYPE="t3.micro"
 INSTANCE_NAME="AutomationWebServer"
-# Note I have already created a key pair in AWS console named "AutoKeyPair"
+# Key pair name - will be created by create_key_pair.sh
 KEY_NAME="AutoKeyPair"
 
 # Export the variables so they are available to sub-shells if needed
