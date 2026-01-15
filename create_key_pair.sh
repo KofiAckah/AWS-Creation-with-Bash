@@ -41,22 +41,38 @@ create_key_pair() {
     # Define the key file path
     KEY_FILE="${SCRIPT_DIR}/${KEY_NAME}.pem"
     
-    # Check if the key file already exists locally
-    if [ -f "$KEY_FILE" ]; then
-        log_warn "Key file already exists locally: $KEY_FILE"
-        log_info "Checking if key pair exists in AWS..."
+    # Check if key pair exists in AWS first
+    if aws ec2 describe-key-pairs --key-names "$KEY_NAME" --region "$REGION" &> /dev/null; then
+        log_info "Key Pair already exists in AWS: $KEY_NAME"
         
-        if aws ec2 describe-key-pairs --key-names "$KEY_NAME" --region "$REGION" &> /dev/null; then
-            log_info "Key Pair already exists in AWS. Using existing key pair."
-            save_state "KEY_NAME" "$KEY_NAME"
-            log_section_end "Key Pair Creation" "success"
-            return 0
+        # Check if local key file exists
+        if [ -f "$KEY_FILE" ]; then
+            log_info "Local key file also exists. Using existing key pair."
         else
-            log_warn "Local key file exists but key pair not found in AWS."
-            log_info "Backing up existing key file..."
-            mv "$KEY_FILE" "${KEY_FILE}.backup.$(date +%s)"
-            log_info "Existing key file backed up"
+            log_warn "Key pair exists in AWS but local key file not found."
+            log_warn "You will not be able to SSH to instances."
+            log_warn "To create a new key pair, delete the existing one in AWS first:"
+            log_warn "  aws ec2 delete-key-pair --key-name $KEY_NAME --region $REGION"
         fi
+        
+        save_state "KEY_NAME" "$KEY_NAME"
+        log_section_end "Key Pair Creation" "success"
+        return 0
+    fi
+    
+    # Check if the key file already exists locally but not in AWS
+    if [ -f "$KEY_FILE" ]; then
+        log_warn "Local key file exists but key pair not found in AWS."
+        log_info "Backing up existing key file..."
+        mv "$KEY_FILE" "${KEY_FILE}.backup.$(date +%s)"
+        log_info "Existing key file backed up"
+    fi
+    
+    # Check if key exists in AWS before attempting creation
+    if aws ec2 describe-key-pairs --key-names "$KEY_NAME" --region "$AWS_REGION" &>/dev/null; then
+        log_info "Key Pair '$KEY_NAME' already exists in AWS. Using existing key pair."
+        save_to_state "KEY_NAME" "$KEY_NAME"
+        return 0
     fi
     
     # Create Key Pair

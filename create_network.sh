@@ -39,6 +39,15 @@ create_vpc() {
     log_info "Creating VPC with CIDR block: $VPC_CIDR"
     validate_cidr "$VPC_CIDR" "VPC" || return 1
     
+    if [ "$DRY_RUN" = "true" ]; then
+        log_info "[DRY RUN] Would create VPC with CIDR: $VPC_CIDR"
+        VPC_ID="vpc-dryrun-$(date +%s)"
+        log_info "[DRY RUN] VPC ID would be: $VPC_ID"
+        save_state "VPC_ID" "$VPC_ID"
+        log_section_end "VPC Creation" "success"
+        return 0
+    fi
+    
     # Create VPC
     log_command "aws ec2 create-vpc"
     VPC_ID=$(aws ec2 create-vpc \

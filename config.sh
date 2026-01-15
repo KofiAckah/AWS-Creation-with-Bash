@@ -3,6 +3,10 @@
 # --- Global AWS Settings ---
 REGION="eu-west-1" 
 
+# --- Dry Run Mode ---
+# Set to true to preview what would be executed without actually creating resources
+DRY_RUN=${DRY_RUN:-false}
+
 # --- VPC & Networking Constants ---
 # The CIDR block for the VPC
 VPC_CIDR="10.0.0.0/16"
@@ -36,9 +40,10 @@ HTTPS_CIDR="0.0.0.0/0"    # HTTPS access from anywhere
 INSTANCE_TYPE="t3.micro"
 INSTANCE_NAME="AutomationWebServer"
 # Key pair name - will be created by create_key_pair.sh
-KEY_NAME="AutoKeyPair"
+# KEY_NAME="AutoKeyPair"
+KEY_NAME="AutoKeyPai"
 
 # Export the variables so they are available to sub-shells if needed
 export REGION VPC_CIDR PUBLIC_SUBNET_CIDR PRIVATE_SUBNET_CIDR PROJECT_TAG LOG_FILE STATE_FILE
 export SECURITY_GROUP_NAME SECURITY_GROUP_DESCRIPTION SSH_CIDR HTTP_CIDR HTTPS_CIDR
-export INSTANCE_TYPE INSTANCE_NAME KEY_NAME
+export INSTANCE_TYPE INSTANCE_NAME KEY_NAME DRY_RUN

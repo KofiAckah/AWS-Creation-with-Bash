@@ -18,8 +18,8 @@ cleanup_s3_bucket() {
     
     log_info "Cleaning up S3 bucket: $bucket_name"
     
-    # Check if bucket exists
-    if ! aws s3 ls "s3://$bucket_name" --region "$REGION" &> /dev/null; then
+    # Check if bucket exists (S3 is global, no region check needed for ls)
+    if ! aws s3 ls "s3://$bucket_name" 2>/dev/null >/dev/null; then
         log_warn "S3 bucket does not exist: $bucket_name"
         log_section_end "S3 Bucket Cleanup" "success"
         return 0
@@ -27,17 +27,16 @@ cleanup_s3_bucket() {
     
     # Empty the bucket first
     log_info "Emptying S3 bucket contents..."
-    aws s3 rm "s3://$bucket_name" --recursive --region "$REGION" 2>&1 | tee -a "$LOG_FILE"
+    aws s3 rm "s3://$bucket_name" --recursive 2>&1 | tee -a "$LOG_FILE"
     
-    if [ $? -ne 0 ]; then
-        log_error "Failed to empty S3 bucket"
-        log_section_end "S3 Bucket Cleanup" "failed"
-        return 1
+    local empty_result=$?
+    if [ $empty_result -ne 0 ]; then
+        log_warn "Failed to empty S3 bucket (it may already be empty), continuing..."
     fi
     
     # Delete the bucket
     log_info "Deleting S3 bucket..."
-    aws s3 rb "s3://$bucket_name" --region "$REGION" 2>&1 | tee -a "$LOG_FILE"
+    aws s3 rb "s3://$bucket_name" 2>&1 | tee -a "$LOG_FILE"
     
     if [ $? -ne 0 ]; then
         log_error "Failed to delete S3 bucket"

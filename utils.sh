@@ -97,6 +97,23 @@ log_command() {
     log_debug "Executing: $cmd"
 }
 
+# Function to execute AWS command with dry run support
+run_aws_command() {
+    local description="$1"
+    shift
+    local cmd=("$@")
+    
+    if [ "$DRY_RUN" = "true" ]; then
+        log_info "[DRY RUN] Would execute: $description"
+        log_debug "[DRY RUN] Command: ${cmd[*]}"
+        return 0
+    else
+        log_debug "Executing: ${cmd[*]}"
+        "${cmd[@]}"
+        return $?
+    fi
+}
+
 # Function to save state to .env file
 save_state() {
     local key=$1
@@ -104,6 +121,11 @@ save_state() {
     local state_file="${STATE_FILE:-.env}"
     
     log_debug "Saving state: $key=$value"
+    
+    if [ "$DRY_RUN" = "true" ]; then
+        log_info "[DRY RUN] Would save state: $key=$value"
+        return 0
+    fi
     
     # Create state file if it doesn't exist
     touch "$state_file"
@@ -129,7 +151,8 @@ load_state() {
         return 1
     fi
     
-    local value=$(grep "^${key}=" "$state_file" 2>/dev/null | cut -d'=' -f2-)
+    # Get value and strip ANSI color codes
+    local value=$(grep "^${key}=" "$state_file" 2>/dev/null | cut -d'=' -f2- | sed 's/\x1b\[[0-9;]*m//g')
     
     if [ -z "$value" ]; then
         log_warn "Key not found in state file: $key"
@@ -137,6 +160,21 @@ load_state() {
     fi
     
     echo "$value"
+}
+
+# Function to get value from state file, removing any ANSI color codes
+get_from_state() {
+    local key=$1
+    if [ -f "$STATE_FILE" ]; then
+        # Remove any ANSI color codes from the value
+        local value=$(grep "^${key}=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- | sed 's/\x1b\[[0-9;]*m//g')
+        if [ -n "$value" ]; then
+            echo "$value"
+            return 0
+        fi
+    fi
+    log_warn "Key not found in state file: $key"
+    return 1
 }
 
 # Function to check if AWS CLI is installed
@@ -257,6 +295,7 @@ export -f log_warn
 export -f log_error
 export -f log_fatal
 export -f log_command
+export -f run_aws_command
 export -f save_state
 export -f load_state
 export -f check_aws_cli
@@ -270,3 +309,11 @@ export -f log_section_end
 
 # Initialize logging when sourced
 init_logging
+
+# Display dry run mode if enabled
+if [ "$DRY_RUN" = "true" ]; then
+    log_warn "=========================================="
+    log_warn "DRY RUN MODE ENABLED"
+    log_warn "No actual resources will be created"
+    log_warn "=========================================="
+fi

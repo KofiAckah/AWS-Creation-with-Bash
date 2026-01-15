@@ -13,7 +13,9 @@ This project provides a robust, modular set of shell scripts to automate the com
 ## ✨ Features
 
 ### Core Infrastructure Components
-- **🔑 Key Pair Management**: Automated EC2 key pair creation with secure permissions
+- **� Orchestrator Script**: Automated deployment of entire infrastructure with a single command
+- **🔍 Dry Run Mode**: Preview infrastructure changes without creating actual resources
+- **�🔑 Key Pair Management**: Automated EC2 key pair creation with secure permissions
 - **🌐 VPC Management**: Automated VPC creation with configurable CIDR blocks and DNS support
 - **🔀 Network Segmentation**: Public and private subnet provisioning with intelligent AZ selection
 - **🌍 Internet Gateway**: Automatic IGW creation, attachment, and route configuration
@@ -37,6 +39,7 @@ This project provides a robust, modular set of shell scripts to automate the com
 
 ```
 AWS_Resource_Creation_Bash/
+├── deploy.sh                    # Orchestrator script (runs all scripts in order)
 ├── config.sh                    # Central configuration management
 ├── utils.sh                     # Logging and utility functions
 ├── create_key_pair.sh           # EC2 key pair creation
@@ -147,6 +150,26 @@ vim config.sh
 ```
 
 ### 4. Deploy Infrastructure
+
+#### Option A: Using the Orchestrator (Recommended)
+```bash
+# Deploy entire infrastructure with one command
+./deploy.sh
+
+# Preview deployment without creating resources (dry run)
+./deploy.sh --dry-run
+
+# Deploy with verbose logging
+./deploy.sh --verbose
+
+# Deploy everything except S3 bucket
+./deploy.sh --skip create_s3_bucket.sh
+
+# Only deploy network infrastructure
+./deploy.sh --only create_network.sh
+```
+
+#### Option B: Manual Step-by-Step Deployment
 ```bash
 # Step 1: Create EC2 Key Pair (MUST BE FIRST!)
 ./create_key_pair.sh
@@ -181,12 +204,125 @@ vim config.sh
 
 ## 📋 Detailed Usage
 
+### Using the Orchestrator Script
+
+The `deploy.sh` orchestrator script simplifies infrastructure deployment by automatically running all creation scripts in the correct dependency order.
+
+#### Basic Usage
+
+```bash
+# Deploy entire infrastructure
+./deploy.sh
+```
+
+#### Command Line Options
+
+```bash
+./deploy.sh [OPTIONS]
+
+OPTIONS:
+    -d, --dry-run       Preview what would be deployed without creating resources
+    -h, --help          Display help message
+    -s, --skip SCRIPT   Skip a specific script (can be used multiple times)
+    -o, --only SCRIPT   Only run a specific script
+    -v, --verbose       Enable verbose (DEBUG) logging
+```
+
+#### Examples
+
+```bash
+# Preview deployment (dry run)
+./deploy.sh --dry-run
+
+# Skip S3 bucket creation
+./deploy.sh --skip create_s3_bucket.sh
+
+# Skip multiple scripts
+./deploy.sh --skip create_s3_bucket.sh --skip create_ec2.sh
+
+# Only deploy networking
+./deploy.sh --only create_network.sh
+
+# Deploy with detailed logging
+./deploy.sh --verbose
+
+# Combine options
+./deploy.sh --dry-run --verbose
+```
+
+#### Deployment Flow
+
+The orchestrator executes scripts in this order:
+1. **create_key_pair.sh** - Create EC2 Key Pair
+2. **create_network.sh** - Create VPC and Network Infrastructure
+3. **create_security_group.sh** - Create Security Group
+4. **create_ec2.sh** - Create EC2 Instance with Web Server
+5. **create_s3_bucket.sh** - Create S3 Bucket and Upload Files
+
+Each script:
+- Is validated before execution
+- Runs only if the previous script succeeded (unless you choose to continue)
+- Logs progress and results
+- Updates the state file with resource IDs
+
+#### Interactive Confirmations
+
+The orchestrator will prompt for confirmation:
+- Before starting deployment (shows deployment plan)
+- After a script fails (option to continue or abort)
+
+### Dry Run Mode
+
+Dry run mode allows you to preview infrastructure changes without creating actual AWS resources.
+
+#### Enabling Dry Run
+
+```bash
+# Using the orchestrator
+./deploy.sh --dry-run
+
+# For individual scripts
+DRY_RUN=true ./create_network.sh
+
+# Set globally in config.sh
+# Edit config.sh and set: DRY_RUN=true
+```
+
+#### What Dry Run Does
+
+✓ Shows exactly what commands would be executed
+✓ Validates AWS CLI configuration and credentials
+✓ Checks for existing resources in state file
+✓ Displays what resources would be created
+✓ Runs all validation logic
+✓ Shows estimated deployment plan
+
+✗ Does NOT create actual AWS resources
+✗ Does NOT modify the state file
+✗ Does NOT incur AWS charges
+
+#### Dry Run Output Example
+
+```log
+[2026-01-15 10:30:45] [WARN] ==========================================
+[2026-01-15 10:30:45] [WARN] DRY RUN MODE ENABLED
+[2026-01-15 10:30:45] [WARN] No actual resources will be created
+[2026-01-15 10:30:45] [WARN] ==========================================
+[2026-01-15 10:30:46] [INFO] >>> Starting: VPC Creation
+[2026-01-15 10:30:46] [INFO] [DRY RUN] Would execute: Create VPC
+[2026-01-15 10:30:46] [DEBUG] [DRY RUN] Command: aws ec2 create-vpc --cidr-block 10.0.0.0/16...
+[2026-01-15 10:30:46] [INFO] [DRY RUN] Would save state: VPC_ID=<would-be-generated>
+```
+
 ### Creating EC2 Key Pair (Required First Step!)
 
 ### Network Configuration
 ```bash
 # Region
 REGION="eu-west-1"
+
+# Dry Run Mode (set to true to preview without creating resources)
+DRY_RUN=false
 
 # VPC CIDR Block
 VPC_CIDR="10.0.0.0/16"
@@ -228,6 +364,79 @@ STATE_FILE=".env"                  # State persistence file
 
 # Log Level (in utils.sh)
 LOG_LEVEL=${LOG_LEVEL:-$LOG_LEVEL_INFO}  # INFO, DEBUG, WARN, ERROR, FATAL
+```
+
+## 🎯 Deployment Best Practices
+
+### First-Time Deployment
+
+1. **Always Start with Dry Run**
+   ```bash
+   ./deploy.sh --dry-run
+   ```
+   Review what will be created before actual deployment.
+
+2. **Review Configuration**
+   - Check `config.sh` for correct region and CIDR blocks
+   - Verify AWS CLI credentials are configured
+   - Ensure you have necessary IAM permissions
+
+3. **Deploy with Orchestrator**
+   ```bash
+   ./deploy.sh
+   ```
+   Let the orchestrator handle dependencies automatically.
+
+4. **Monitor Logs**
+   ```bash
+   tail -f setup.log
+   ```
+   Watch deployment progress in real-time.
+
+### Incremental Updates
+
+```bash
+# Add a new component without recreating existing resources
+./deploy.sh --only create_s3_bucket.sh
+
+# Update specific components
+./create_network.sh  # Safe to re-run, checks existing resources
+```
+
+### Testing Changes
+
+```bash
+# Test changes without affecting production
+DRY_RUN=true ./deploy.sh
+
+# Or use dry-run flag
+./deploy.sh --dry-run --verbose
+```
+
+### Recommended Workflow
+
+```
+1. Configure → 2. Dry Run → 3. Review → 4. Deploy → 5. Verify → 6. Document
+```
+
+```bash
+# 1. Configure
+vim config.sh
+
+# 2. Dry Run
+./deploy.sh --dry-run
+
+# 3. Review logs
+cat setup.log
+
+# 4. Deploy
+./deploy.sh
+
+# 5. Verify
+./check_resources.sh
+
+# 6. Document
+# Save output, state file, and key pair
 ```
 
 ## 📋 Detailed Usage
@@ -511,6 +720,66 @@ fi
 
 ## 🐛 Troubleshooting
 
+### Orchestrator Issues
+
+#### Orchestrator Script Not Found or Not Executable
+```bash
+# Check if file exists
+ls -la deploy.sh
+
+# Make it executable
+chmod +x deploy.sh
+
+# Run it
+./deploy.sh
+```
+
+#### Deployment Fails at Specific Script
+```bash
+# View the error in logs
+grep "\[ERROR\]" setup.log | tail -20
+
+# Check which resources were created
+cat .env
+
+# Re-run from failed point (orchestrator will skip existing resources)
+./deploy.sh
+
+# Or run specific script manually
+./create_network.sh
+```
+
+#### Want to Skip Failed Script and Continue
+```bash
+# Skip the problematic script
+./deploy.sh --skip create_s3_bucket.sh
+```
+
+#### Dry Run Shows Errors
+```bash
+# Dry run reveals configuration issues without creating resources
+./deploy.sh --dry-run --verbose
+
+# Fix issues in config.sh, then try again
+vim config.sh
+./deploy.sh --dry-run
+```
+
+#### Scripts Running in Wrong Order
+The orchestrator ensures correct execution order:
+1. Key Pair → 2. Network → 3. Security Group → 4. EC2 → 5. S3
+
+You cannot change this order as it respects resource dependencies.
+
+#### Permission Denied on Scripts
+```bash
+# Make all scripts executable
+chmod +x *.sh
+
+# Verify
+ls -la *.sh
+```
+
 ### Key Pair Issues
 
 #### Key Pair Already Exists
@@ -561,6 +830,112 @@ aws ec2 describe-instances --instance-ids $INSTANCE_ID
 
 # 4. Try SSH with verbose output
 ssh -i AutoKeyPair.pem -v ec2-user@$PUBLIC_IP
+```
+
+## 📚 Additional Resources
+
+### Quick Reference Commands
+
+```bash
+# Deploy entire infrastructure
+./deploy.sh
+
+# Preview deployment
+./deploy.sh --dry-run
+
+# Deploy with logging
+./deploy.sh --verbose
+
+# Check resources
+./check_resources.sh
+
+# View logs
+cat setup.log
+tail -f setup.log
+
+# View state
+cat .env
+
+# Cleanup
+./cleanup_resources.sh
+
+# Get help
+./deploy.sh --help
+```
+
+### Important Files
+
+| File | Purpose | Location |
+|------|---------|----------|
+| `deploy.sh` | Orchestrator script | Root directory |
+| `config.sh` | Configuration settings | Root directory |
+| `.env` | Resource state tracking | Auto-generated |
+| `setup.log` | Execution logs | Auto-generated |
+| `*.pem` | EC2 private key | Auto-generated |
+
+### Environment Variables
+
+```bash
+# Enable dry run mode
+export DRY_RUN=true
+
+# Set log level
+export LOG_LEVEL=0  # DEBUG
+
+# Override region
+export REGION="us-east-1"
+
+# Run with overrides
+DRY_RUN=true LOG_LEVEL=0 ./deploy.sh
+```
+
+### Deployment Scenarios
+
+#### Scenario 1: First-Time Full Deployment
+```bash
+./deploy.sh
+```
+
+#### Scenario 2: Preview Before Deployment
+```bash
+./deploy.sh --dry-run
+./deploy.sh  # Deploy after review
+```
+
+#### Scenario 3: Partial Deployment
+```bash
+# Network only
+./deploy.sh --only create_network.sh
+
+# Everything except EC2
+./deploy.sh --skip create_ec2.sh
+```
+
+#### Scenario 4: Re-deployment with Changes
+```bash
+# Edit configuration
+vim config.sh
+
+# Preview changes
+./deploy.sh --dry-run
+
+# Apply changes (idempotent - won't recreate existing resources)
+./deploy.sh
+```
+
+#### Scenario 5: Troubleshooting Deployment
+```bash
+# Deploy with verbose logging
+./deploy.sh --verbose
+
+# Check what was created
+cat .env
+
+# Review logs
+grep ERROR setup.log
+
+# Continue from where it failed
+./deploy.sh
 ```
 
 ---
