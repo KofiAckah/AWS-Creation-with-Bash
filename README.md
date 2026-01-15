@@ -10,6 +10,13 @@ A comprehensive, production-ready Bash automation toolkit for provisioning and m
 
 This project provides a robust, modular set of shell scripts to automate the complete lifecycle of AWS infrastructure deployment. Built with DevOps best practices, it features idempotent operations, comprehensive logging, state persistence, and graceful error handling - making infrastructure provisioning reliable, repeatable, and maintainable.
 
+### 📸 Quick Preview
+
+<div align="center">
+  <img src="Assets/DeployScreenshot.png" alt="Deployment in Action" width="800"/>
+  <p><em>Orchestrator deploying complete AWS infrastructure</em></p>
+</div>
+
 ## ✨ Features
 
 ### Core Infrastructure Components
@@ -196,11 +203,17 @@ vim config.sh
 # Open browser to http://<public-ip>
 ```
 
+![Resource Verification](Assets/Check_Resource_Screenshot.png)
+*Checking deployed resources status*
+
 ### 6. Cleanup (Optional)
 ```bash
 # Remove all resources (except key pair - must be deleted manually)
 ./cleanup_resources.sh
 ```
+
+![Cleanup Resources](Assets/CleanUpResources.png)
+*Automated cleanup of all AWS resources*
 
 ## 📋 Detailed Usage
 
@@ -313,6 +326,9 @@ DRY_RUN=true ./create_network.sh
 [2026-01-15 10:30:46] [DEBUG] [DRY RUN] Command: aws ec2 create-vpc --cidr-block 10.0.0.0/16...
 [2026-01-15 10:30:46] [INFO] [DRY RUN] Would save state: VPC_ID=<would-be-generated>
 ```
+
+![Dry Run Mode](Assets/DeployDryRunScreenshot.png)
+*Preview deployment without creating resources*
 
 ### Creating EC2 Key Pair (Required First Step!)
 
@@ -516,6 +532,9 @@ http://<public-ip>
 ssh -i AutoKeyPair.pem ec2-user@<public-ip>
 ```
 
+![EC2 Web Server](Assets/EC2_Instance_Web.png)
+*Apache web server running with custom HTML dashboard*
+
 ### Creating S3 Bucket
 
 ```bash
@@ -532,6 +551,9 @@ ssh -i AutoKeyPair.pem ec2-user@<public-ip>
 **State saved:**
 - `S3_BUCKET_NAME`
 - `WELCOME_FILE_URL`
+
+![S3 Bucket](Assets/BucketScreenShot.png)
+*S3 bucket with versioning and public access configured*
 
 ### Checking Resources
 
