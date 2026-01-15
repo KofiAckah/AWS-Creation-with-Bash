@@ -51,6 +51,7 @@ build/
 *password*
 *token*
 *.pem
+*.pem.*
 *.key
 
 # IDE
