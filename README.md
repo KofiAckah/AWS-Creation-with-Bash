@@ -6,43 +6,43 @@ A comprehensive, production-ready Bash automation toolkit for provisioning and m
 ![Bash](https://img.shields.io/badge/Bash-4.0+-green?logo=gnu-bash)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-## 🚀 Overview
+## Overview
 
 This project provides a robust, modular set of shell scripts to automate the complete lifecycle of AWS infrastructure deployment. Built with DevOps best practices, it features idempotent operations, comprehensive logging, state persistence, and graceful error handling - making infrastructure provisioning reliable, repeatable, and maintainable.
 
-### 📸 Quick Preview
+### Quick Preview
 
 <div align="center">
   <img src="Assets/DeployScreenshot.png" alt="Deployment in Action" width="800"/>
   <p><em>Orchestrator deploying complete AWS infrastructure</em></p>
 </div>
 
-## ✨ Features
+## Features
 
 ### Core Infrastructure Components
-- **� Orchestrator Script**: Automated deployment of entire infrastructure with a single command
-- **🔍 Dry Run Mode**: Preview infrastructure changes without creating actual resources
-- **�🔑 Key Pair Management**: Automated EC2 key pair creation with secure permissions
-- **🌐 VPC Management**: Automated VPC creation with configurable CIDR blocks and DNS support
-- **🔀 Network Segmentation**: Public and private subnet provisioning with intelligent AZ selection
-- **🌍 Internet Gateway**: Automatic IGW creation, attachment, and route configuration
-- **📊 Route Tables**: Dynamic route table setup with proper subnet associations
-- **🔒 Security Groups**: Pre-configured security groups with customizable ingress rules
-- **💻 EC2 Instances**: Automated EC2 provisioning with user data scripts
-- **📦 S3 Storage**: S3 bucket creation with versioning and public access configuration
-- **🌐 Web Server**: Automated Apache installation with custom HTML deployment
+- **Orchestrator Script**: Automated deployment of entire infrastructure with a single command
+- **Dry Run Mode**: Preview infrastructure changes without creating actual resources
+- **Key Pair Management**: Automated EC2 key pair creation with secure permissions
+- **VPC Management**: Automated VPC creation with configurable CIDR blocks and DNS support
+- **Network Segmentation**: Public and private subnet provisioning with intelligent AZ selection
+- **Internet Gateway**: Automatic IGW creation, attachment, and route configuration
+- **Route Tables**: Dynamic route table setup with proper subnet associations
+- **Security Groups**: Pre-configured security groups with customizable ingress rules
+- **EC2 Instances**: Automated EC2 provisioning with user data scripts
+- **S3 Storage**: S3 bucket creation with versioning and public access configuration
+- **Web Server**: Automated Apache installation with custom HTML deployment
 
 ### Advanced Capabilities
-- **📝 Multi-Level Logging**: DEBUG, INFO, WARN, ERROR, FATAL levels with color-coded output
-- **💾 State Management**: Persistent state tracking using `.env` files for idempotency
-- **✅ Pre-flight Validation**: AWS CLI, credentials, region, and CIDR block validation
-- **🔄 Idempotent Operations**: Safe to run multiple times without resource duplication
-- **🏷️ Resource Tagging**: Consistent tagging strategy across all AWS resources
-- **🧹 Cleanup Automation**: Complete resource cleanup with dependency management
-- **📊 Status Checking**: Resource status verification before operations
-- **🎨 Beautiful UI**: Custom HTML dashboard with real-time EC2 metadata display
+- **Multi-Level Logging**: DEBUG, INFO, WARN, ERROR, FATAL levels with color-coded output
+- **State Management**: Persistent state tracking using `.env` files for idempotency
+- **Pre-flight Validation**: AWS CLI, credentials, region, and CIDR block validation
+- **Idempotent Operations**: Safe to run multiple times without resource duplication
+- **Resource Tagging**: Consistent tagging strategy across all AWS resources
+- **Cleanup Automation**: Complete resource cleanup with dependency management
+- **Status Checking**: Resource status verification before operations
+- **Beautiful UI**: Custom HTML dashboard with real-time EC2 metadata display
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 AWS_Resource_Creation_Bash/
@@ -63,7 +63,7 @@ AWS_Resource_Creation_Bash/
 └── README.md                    # This file
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ### Component Overview
 
@@ -102,7 +102,7 @@ Key Pair → VPC → Internet Gateway → Subnets → Route Tables → Security 
                                                                                S3 Bucket
 ```
 
-## 🛠️ Prerequisites
+## Prerequisites
 
 ### Required Software
 - **AWS CLI**: Version 2.0 or higher
@@ -132,7 +132,7 @@ Key Pair → VPC → Internet Gateway → Subnets → Route Tables → Security 
 }
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone and Setup
 ```bash
@@ -215,7 +215,7 @@ vim config.sh
 ![Cleanup Resources](Assets/CleanUpResources.png)
 *Automated cleanup of all AWS resources*
 
-## 📋 Detailed Usage
+## Detailed Usage
 
 ### Using the Orchestrator Script
 
@@ -359,7 +359,7 @@ PRIVATE_SUBNET_NAME="AutomationPrivateSubnet"
 SECURITY_GROUP_NAME="AutomationSecurityGroup"
 
 # Access Rules (customize for production!)
-SSH_CIDR="0.0.0.0/0"      # ⚠️ Restrict to your IP in production
+SSH_CIDR="0.0.0.0/0"      # Restrict to your IP in production
 HTTP_CIDR="0.0.0.0/0"     # Allow public web access
 HTTPS_CIDR="0.0.0.0/0"    # Allow secure web access
 ```
@@ -382,7 +382,7 @@ STATE_FILE=".env"                  # State persistence file
 LOG_LEVEL=${LOG_LEVEL:-$LOG_LEVEL_INFO}  # INFO, DEBUG, WARN, ERROR, FATAL
 ```
 
-## 🎯 Deployment Best Practices
+## Deployment Best Practices
 
 ### First-Time Deployment
 
@@ -455,7 +455,7 @@ cat setup.log
 # Save output, state file, and key pair
 ```
 
-## 📋 Detailed Usage
+## Detailed Usage
 
 ### Creating Network Infrastructure
 
@@ -501,9 +501,9 @@ cat setup.log
 ```
 
 **Prerequisites:**
-- ✅ Key pair must exist (run `create_key_pair.sh` first)
-- ✅ VPC must exist (run `create_network.sh` first)
-- ✅ Security group must exist (run `create_security_group.sh` first)
+- Key pair must exist (run `create_key_pair.sh` first)
+- VPC must exist (run `create_network.sh` first)
+- Security group must exist (run `create_security_group.sh` first)
 
 **What it does:**
 - Fetches latest Amazon Linux 2 AMI
@@ -584,7 +584,7 @@ ssh -i AutoKeyPair.pem ec2-user@<public-ip>
 ./cleanup_resources.sh
 ```
 
-**⚠️ Note:** This script does NOT delete the EC2 key pair. You must delete it manually if needed.
+**Note:** This script does NOT delete the EC2 key pair. You must delete it manually if needed.
 
 **What it does:**
 - Backs up state file
@@ -599,7 +599,7 @@ ssh -i AutoKeyPair.pem ec2-user@<public-ip>
   7. VPC
 - Clears state file
 
-## 📝 Logging System
+## Logging System
 
 ### Log Format
 ```
@@ -636,7 +636,7 @@ grep "\[INFO\]" setup.log
 tail -n 50 setup.log
 ```
 
-## 💾 State Management
+## State Management
 
 ### State File (.env)
 The `.env` file tracks all resource IDs for idempotency and cleanup:
@@ -672,7 +672,7 @@ if [ -n "$(load_state KEY 2>/dev/null)" ]; then
 fi
 ```
 
-## 🔒 Security Best Practices
+## Security Best Practices
 
 ### Key Pair Security
 
@@ -740,7 +740,7 @@ fi
        --versioning-configuration Status=Enabled,MFADelete=Enabled
    ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Orchestrator Issues
 
@@ -822,7 +822,7 @@ aws sts get-caller-identity
 ```
 
 #### Lost Private Key File
-**⚠️ If you lose your .pem file, you CANNOT recover it!**
+**If you lose your .pem file, you CANNOT recover it!**
 ```bash
 # Delete the key pair and create a new one
 aws ec2 delete-key-pair --key-name AutoKeyPair --region eu-west-1
@@ -854,7 +854,7 @@ aws ec2 describe-instances --instance-ids $INSTANCE_ID
 ssh -i AutoKeyPair.pem -v ec2-user@$PUBLIC_IP
 ```
 
-## 📚 Additional Resources
+## Additional Resources
 
 ### Quick Reference Commands
 
@@ -962,7 +962,7 @@ grep ERROR setup.log
 
 ---
 
-**Made with ❤️ for the AWS community**
+**Made with for the AWS community**
 
 For questions, issues, or contributions, please open an issue or submit a pull request.
 
